@@ -24,7 +24,7 @@ To begin, we need a certificate and the easiest way is to create a self-signed o
 
 * The hash algorithm will be set to SHA-384 as OWASP recommends in their [TLS Cipher Cheat Sheet](https://www.owasp.org/index.php/TLS_Cipher_String_Cheat_Sheet)
 
-The entire command as found in `CreateCertficate.ps1`:
+This is command used in [CreateCertficate.ps1](blob/master/CreateCertificate.ps1):
 
 ```powershell
 $notBefore = (Get-Date).AddDays(-1)
