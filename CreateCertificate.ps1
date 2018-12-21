@@ -1,5 +1,5 @@
 ﻿<#
- CmsMsg: CreateCertificate 1.0
+ CmsMsg: CreateCertificate 1.04
  Copyright (c) 2018 Michael 'Tex' Hex 
  Licensed under the Apache License, Version 2.0. 
 
@@ -13,9 +13,9 @@
 Set-StrictMode -version Latest
 
 #Password used for the PFX file
-Set-Variable PFX_PASSWORD "Secure42!" -option ReadOnly -Force
+Set-Variable PFX_PASSWORD "CmsMsg42!" -option ReadOnly -Force
 
-#Calculate NotBefore and NotAfter dates:
+#Calculate NotBefore and NotAfter dates
 #Set NotBefore to yesterday and NotAfter to 2099
 $notBefore = (Get-Date).AddDays(-1)
 $notAfter = Get-Date -Year 2099 -Month 12 -Day 31
@@ -36,8 +36,7 @@ $cert = New-SelfSignedCertificate `
 write-host "New Cert [$($cert.Subject)] with Thumbprint [$($cert.Thumbprint)] created"
 
 $exportFolder = [environment]::GetFolderPath("mydocuments")
-write-host "Exporting certificate to $exportFolder..."
-
+write-host "Exporting certificate files to $exportFolder..."
 
 $fileNameNoExtension = "$($exportFolder)\$($cert.Subject)"
 
@@ -49,13 +48,13 @@ $pwd = ConvertTo-SecureString -String $PFX_PASSWORD -Force -AsPlainText
 Export-PfxCertificate -Cert $cert -FilePath "$($fileNameNoExtension).pfx" -Password $pwd | Out-Null
 
 #Finally, convert the PFX to Base64 in order to store it as text in a password manager 
-$pfxBase64 = Get-Content "$($fileNameNoExtension).pfx" -Encoding Byte -ReadCount 0 
-[System.Convert]::ToBase64String($pfxBase64, [System.Base64FormattingOptions]::InsertLineBreaks) | Out-File "$($fileNameNoExtension).pfx-base64.txt"
+$pfxFileBytes = Get-Content "$($fileNameNoExtension).pfx" -Encoding Byte -ReadCount 0 
+[System.Convert]::ToBase64String($pfxFileBytes, [System.Base64FormattingOptions]::InsertLineBreaks) | Out-File "$($fileNameNoExtension).pfx-base64.txt"
 
+#Finally, DELETE this certificate from the local store to ensure that an import is required  which 
+#is a good test if we were able to export the certificate correctly
+write-host "Deleting certificate from certificate store..."
+Get-ChildItem "Cert:\CurrentUser\My\$($cert.Thumbprint)" | Remove-Item
 
-#Create PFX from Base64
-$pfxBase64Encoded = Get-Content "$($fileNameNoExtension).pfx-base64.txt" -ReadCount 0 
-[System.Convert]::FromBase64String($pfxBase64Encoded) | Set-Content -Path "$($fileNameNoExtension).pfx2" -Encoding Byte
- 
 
 write-host "All done"
