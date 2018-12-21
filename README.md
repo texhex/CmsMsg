@@ -50,7 +50,7 @@ $cert = New-SelfSignedCertificate `
 write-host "New Cert [$($cert.Subject)] with Thumbprint [$($cert.Thumbprint)] created"
 ```
 
-Once you have run [CreateCertficate.ps1](/CreateCertificate.ps1), it will create the following files in your *Documents* folder
+Once you have run [CreateCertficate.ps1](/CreateCertificate.ps1), it will create the following files in your *Documents* folder. Please note that the script will overwrite these files without warning.
 
 * The file `CN=CmsMsgExample.cer` which **only** contains the public key of this certificate and can be freely distributed
 * The file `CN=CmsMsgExample.pfx` which is an export of the entire certificate, so it contains both the public and private key
@@ -58,11 +58,11 @@ Once you have run [CreateCertficate.ps1](/CreateCertificate.ps1), it will create
 
 Only the CER file should be distributed, the PFX files are required to be kept private.
 
-Warning: `CreateCertficate.ps1` will overwrite these files without warning when they exist.
+
 
 ## Importing the certificate
 
-After running the creation script, you have the required certificate to start using the CmsMessage cmdlets. In order to decrypt any data, that was encrypted with the generated CER file, you need to have the full certificate (public and private) in your local certificate store.
+After running the creation script, you have the required certificate to start using the CmsMessage cmdlets. In order to decrypt any data, that was encrypted with the generated CER file, you need to have the full certificate (PFX - public and private) in your local certificate store. 
 
 The first option to do this is to import the PFX file using the build-in certificate management:
 
@@ -73,6 +73,23 @@ The first option to do this is to import the PFX file using the build-in certifi
 * Please note that you need to select the PFX file, **not** the CER file. By default, the file open dialog will not show PFX files, so you need to select “Personal information exchange” (PFX) in that dialog
 * If the wizard asks you for a password, the default password the script uses is *CmsMsg42!*
 * If the wizard does **not** ask you for a password, you selected the wrong file
+
+Please note however, that you will need some sort of backup in case your device breaks down and the certificate is lost. You can of course store the PFX file in a safe place (e.g. on the network or on a NAS), but the security of the PFX file is then depending on the security of that system and/or your backup system.
+
+The recommended way is to **DELETE** the PFX file and store the text (Base64-encoded) representation of the PFX file in a password safe, for example KeePass to add another layer of protection. To do this, open `CN=CmsMsgExample.pfx-base64.txt` and copy the content of it to your password manager.
+
+To import this Base64-encoded text, do the following:
+
+* Open `CN=CmsMsgExample.pfx-base64.txt` with a text editor and copy the entire text to your clipboard (CTRL+A followed by CTRL+C)
+* Start `ImportBase64PfxCertificate.ps1` and paste the text (CTRL+V). When done, press RETURN once to stop the input
+* Enter the password for this PFX file; the default password the script uses is *CmsMsg42!*
+* The certificate is imported in your certificate store *Personal* -> *Certificates* (use `CertMgr.msc` to view it)
+* Open it and make sure it shows “You have a private key for this certificate”
+
+
+
+
+
 
 
 
