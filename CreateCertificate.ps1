@@ -1,10 +1,10 @@
 ﻿<#
- CmsMsg: CreateCertificate 1.04
  Copyright (c) 2018 Michael 'Tex' Hex 
- Licensed under the Apache License, Version 2.0. 
-
+ Licensed under the Apache License, Version 2.0
  https://github.com/texhex/CmsMsg
 #>
+
+write-host "CmsMsg: CreateCertificate 1.05"
 
 #This script requires PowerShell 5.1 or higher 
 #requires -version 5.1
@@ -12,8 +12,18 @@
 #Guard against common code errors
 Set-StrictMode -version Latest
 
+#--CONFIG-----------------------
+
+#Name to be used for the certificate (IssuedTo/Subject)
+Set-Variable CERT_NAME "CmsMsgExample" -option ReadOnly -Force
+
+#A description for this certificate (FriendlyName)
+Set-Variable CERT_DESC "Example certificate for CmsMsg" -option ReadOnly -Force
+
 #Password used for the PFX file
 Set-Variable PFX_PASSWORD "CmsMsg42!" -option ReadOnly -Force
+
+#-------------------------------
 
 #Calculate NotBefore and NotAfter dates
 #Set NotBefore to yesterday and NotAfter to 2099
@@ -23,8 +33,8 @@ $notAfter = Get-Date -Year 2099 -Month 12 -Day 31
 #Create a self-signed certificate to be used for the CmsMessage cmdlets
 #It will be stored in the current users Personal\Certificates store (see certmgr.msc)
 $cert = New-SelfSignedCertificate `
-    -DnsName "CmsMsgExample" `
-    -FriendlyName "Example certificate for CmsMsg" `
+    -DnsName $CERT_NAME `
+    -FriendlyName $CERT_DESC `
     -CertStoreLocation "Cert:\CurrentUser\My" `
     -KeyLength 3072 `
     -HashAlgorithm "Sha384" `
@@ -51,10 +61,13 @@ Export-PfxCertificate -Cert $cert -FilePath "$($fileNameNoExtension).pfx" -Passw
 $pfxFileBytes = Get-Content "$($fileNameNoExtension).pfx" -Encoding Byte -ReadCount 0 
 [System.Convert]::ToBase64String($pfxFileBytes, [System.Base64FormattingOptions]::InsertLineBreaks) | Out-File "$($fileNameNoExtension).pfx-base64.txt"
 
-#Finally, DELETE this certificate from the local store to ensure that an import is required  which 
+#Finally, DELETE this certificate from the local store to ensure that an import is required which 
 #is a good test if we were able to export the certificate correctly
-write-host "Deleting certificate from certificate store..."
+write-host "Deleting certificate from certificate stores..."
 Get-ChildItem "Cert:\CurrentUser\My\$($cert.Thumbprint)" | Remove-Item
+
+#New-SelfSignedCert also creates a certificate in Intermediate Certification Authorities (CA)
+$cert=Get-ChildItem "Cert:\CurrentUser\CA\$($cert.Thumbprint)" | Remove-Item
 
 
 write-host "All done"
