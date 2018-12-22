@@ -43,7 +43,7 @@ $cert = New-SelfSignedCertificate `
     -Type DocumentEncryptionCert `
     -KeyUsage KeyEncipherment, DataEncipherment
 
-write-host "New Cert [$($cert.Subject)] with Thumbprint [$($cert.Thumbprint)] created"
+write-host "New Cert [$($cert.Subject)] with serial [$($cert.SerialNumber)] and thumbprint [$($cert.Thumbprint)] created"
 
 $exportFolder = [environment]::GetFolderPath("mydocuments")
 write-host "Exporting certificate files to $exportFolder..."
@@ -57,17 +57,21 @@ Export-Certificate -Cert $cert -FilePath "$($fileNameNoExtension).cer" | Out-Nul
 $pwd = ConvertTo-SecureString -String $PFX_PASSWORD -Force -AsPlainText
 Export-PfxCertificate -Cert $cert -FilePath "$($fileNameNoExtension).pfx" -Password $pwd | Out-Null
 
-#Finally, convert the PFX to Base64 in order to store it as text in a password manager 
+#Convert the PFX to Base64 in order to store it as text in a password manager 
 $pfxFileBytes = Get-Content "$($fileNameNoExtension).pfx" -Encoding Byte -ReadCount 0 
 [System.Convert]::ToBase64String($pfxFileBytes, [System.Base64FormattingOptions]::InsertLineBreaks) | Out-File "$($fileNameNoExtension).pfx-base64.txt"
 
-#Finally, DELETE this certificate from the local store to ensure that an import is required which 
+#DELETE this certificate from the local store to ensure that an import is required which 
 #is a good test if we were able to export the certificate correctly
 write-host "Deleting certificate from certificate stores..."
 Get-ChildItem "Cert:\CurrentUser\My\$($cert.Thumbprint)" | Remove-Item
 
 #New-SelfSignedCert also creates a certificate in Intermediate Certification Authorities (CA)
-$cert=Get-ChildItem "Cert:\CurrentUser\CA\$($cert.Thumbprint)" | Remove-Item
+#We delete this as well
+Get-ChildItem "Cert:\CurrentUser\CA\$($cert.Thumbprint)" | Remove-Item
+
+#Side note: For a list of all certificate stores and their names in PowerShell, see:
+#https://stackoverflow.com/a/40441687
 
 
 write-host "All done"
