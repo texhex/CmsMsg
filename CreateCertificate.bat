@@ -12,3 +12,4 @@ IF EXIST "%PS_EXE_SYSNATIVE%" SET PS_EXE=%PS_EXE_SYSNATIVE%
 %PS_EXE% -ExecutionPolicy Bypass -File "%~dpn0.ps1"
 
 pause
+
