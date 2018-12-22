@@ -58,11 +58,9 @@ Once you have run [CreateCertficate.ps1](/CreateCertificate.ps1), it will create
 
 Only the CER file should be distributed, the PFX files are required to be kept private.
 
-
-
 ## Importing the certificate
 
-After running the creation script, you have the required certificate to start using the CmsMessage cmdlets. In order to decrypt any data, that was encrypted with the generated CER file, you need to have the full certificate (PFX - public and private) in your local certificate store. 
+After running the creation script, you have the required certificate to start using the CmsMessage cmdlets. In order to decrypt any data, that was encrypted with the generated CER file, you need to have the full certificate (PFX - public and private) in your local certificate store.
 
 The first option to do this is to import the PFX file using the build-in certificate management:
 
@@ -76,22 +74,66 @@ The first option to do this is to import the PFX file using the build-in certifi
 
 Please note however, that you will need some sort of backup in case your device breaks down and the certificate is lost. You can of course store the PFX file in a safe place (e.g. on the network or on a NAS), but the security of the PFX file is then depending on the security of that system and/or your backup system.
 
-The recommended way is to **DELETE** the PFX file and store the text (Base64-encoded) representation of the PFX file in a password safe, for example KeePass to add another layer of protection. To do this, open `CN=CmsMsgExample.pfx-base64.txt` and copy the content of it to your password manager.
+The recommended way is to **DELETE** the PFX file and store the text (Base64-encoded) representation of the PFX file in a password safe (e.g. KeePass) to add another layer of protection. To do this, open `CN=CmsMsgExample.pfx-base64.txt` and copy the content of it to your password manager. After that, delete this file as well. 
 
-To import this Base64-encoded text, do the following:
+To import this Base64-encoded certificate, do the following:
 
-* Open `CN=CmsMsgExample.pfx-base64.txt` with a text editor and copy the entire text to your clipboard (CTRL+A followed by CTRL+C)
+* Open `CN=CmsMsgExample.pfx-base64.txt` with a text editor and copy the entire text to your clipboard
 * Start `ImportBase64PfxCertificate.ps1` and paste the text (CTRL+V). When done, press RETURN once to stop the input
 * Enter the password for this PFX file; the default password the script uses is *CmsMsg42!*
 * The certificate is imported in your certificate store *Personal* -> *Certificates* (use `CertMgr.msc` to view it)
 * Open it and make sure it shows “You have a private key for this certificate”
 
 
+## Encrypting and decrypting data
 
+Encrypting data with `Protect-CmsMessage` is a straight forward process. You just need to provide the clear text (the data you want to protect) and the CER file with the public key:
 
+```powershell
+$myDocFolder = [environment]::GetFolderPath("mydocuments")
 
+$cipherText = Protect-CmsMessage -Content "Secret Message" -To "$myDocFolder\CN=CmsMsgExample.cer"
+```
 
+The variable `$cipherText` will now contain the encrypted text.
 
+Given that you have the certificate with the private key in your Personal certificate store, you can decrypt it with `Unprotect-CmsMessage`:
+
+```powershell
+$plaintext = Unprotect-CmsMessage -Content $cipherText
+```
+
+`Unprotect-CmsMessage` does not need to know any details about the certificate being used, as a CmsMessage (`$cipherText`) is an "envelope" (based on [RFC5652](https://tools.ietf.org/html/rfc5652)) around the encrypted data. This envelope contains information about the encryption method, as well as the certificate that was used to encrypt the data.
+
+## Accessing the CmsMessage properties
+
+The CmsMessage "envelope" allows to find out the certificate that was used for encryption without having to decrypt the message.
+
+This is very useful in cases the automatic decryption fails (*The enveloped-data message does not contain the specified recipient.*) because `Unprotect-CmsMessage` was unable to find an installed certificate matching the one used in the message.
+
+To get access to the fields of a CmsMessage, use `Get-CmsMessage`:
+
+```powershell
+$msg=Get-CmsMessage -Content $cipherText
+
+#Get the first recipient from this message
+$firstRecipient=$msg.RecipientInfos[0]
+
+write-host " "
+write-host "First recipient type..: $($firstRecipient.RecipientIdentifier.Type.ToString())"
+write-host "First recipient issuer: $($firstRecipient.RecipientIdentifier.Value.IssuerName)"
+write-host "First recipient serial: $($firstRecipient.RecipientIdentifier.Value.SerialNumber)"
+write-host " "
+write-host "First recipient key encryption algorithm: $($firstRecipient.KeyEncryptionAlgorithm.Oid.FriendlyName)"
+write-host " "
+write-host "Content encryption algorithm used for this message: $($msg.ContentEncryptionAlgorithm.Oid.FriendlyName)"
+```
+
+These properties also enable to handle different certificates at the same time, for example if you are forced to use new certificates every year because of company policies.
+
+It also explains how `Unprotect-CmsMessage` can decrypt the data without and information about which certificate to use: It checks the `RecipientInfos` array of the message and searches your personal certificates for any certificate with the same name or serial number.  
+
+Please note that the function requires the full (public and private key) to decrypt the message. If you only have stored the public key (CER file) in your personal certificates, it will fail with *"Cannot find object or property."*.
 
 ## Contributions
 
