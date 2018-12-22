@@ -4,7 +4,7 @@
  https://github.com/texhex/CmsMsg
 #>
 
-write-host "CmsMsg: ImportBase64PfxCertificate 1.03"
+write-host "CmsMsg: ImportBase64PfxCertificate 1.04"
 
 #This script requires PowerShell 5.1 or higher 
 #requires -version 5.1
@@ -69,7 +69,7 @@ if ( $inputList.Count -gt 0 )
     $cert = Import-PfxCertificate -FilePath $pfxFilename -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd.Password
     #Access denied. (Exception from HRESULT: 0x80090010) -> No access to cert store
 
-    write-host "Cert [$($cert.Subject)] with Thumbprint [$($cert.Thumbprint)] imported to personal certificates"
+    write-host "Certificate [$($cert.Subject)] with serial [$($cert.SerialNumber)] and thumbprint [$($cert.Thumbprint)] imported to personal certificates"
 
     write-host "Deleting temporary PFX file..."
     Remove-Item -LiteralPath $pfxFilename -Force -ErrorAction Stop
