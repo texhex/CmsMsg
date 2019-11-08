@@ -1,6 +1,6 @@
 # CmsMsg
 
-And example for using PowerShell CmsMessage cmdlets
+An example for using PowerShell CmsMessage cmdlets
 
 ## About
 
